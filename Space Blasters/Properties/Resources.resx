@@ -217,4 +217,22 @@
   <data name="ship1_9" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\ship1-9.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
+  <data name="star_blue" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\star-blue.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="star_orange" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\star-orange.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="star_redgiant" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\star-redgiant.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="star_white" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\star-white.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="star_yellow" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\star-yellow.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Toast" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\Toast.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
 </root>

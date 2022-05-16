@@ -60,19 +60,89 @@ namespace Space_Blasters.Models
             GameState.PlayerObject.Sprite.Height = GameState.PlayerObject.Sprite.SpriteImage.Height;
             GameState.PlayerObject.Sprite.X = (GameState.GameResolution.Width - GameState.PlayerObject.Sprite.Width) / 2;
             GameState.PlayerObject.Sprite.Y = (GameState.GameResolution.Height - GameState.PlayerObject.Sprite.Height) / 2;
-            GameState.PlayerObject.Kimematic = new KinematicObject();
-            GameState.PlayerObject.Kimematic.dX = 0;
-            GameState.PlayerObject.Kimematic.dY = 0;
+            GameState.PlayerObject.Kinematic = new KinematicObject();
+            GameState.PlayerObject.Kinematic.dX = 0;
+            GameState.PlayerObject.Kinematic.dY = 0;
             GameState.PlayerBullets = new HashSet<GameObject>();
+
+            GameState.PlayerShootingEnabled = false;
+            GameState.EnemySpawnQueue = new HashSet<GameObject>();
+            GameState.Enemies = new HashSet<GameObject>();
+            GameState.EnemyBullets = new HashSet<GameObject>();
+            GameState.Level = 0;
+            GameState.PlayerLevelBulletsShot = 0;
+            GameState.PlayerLevelBulletsHit = 0;
+            GameState.PlayerTotalBulletsShot = 0;
+            GameState.PlayerTotalBulletsHit = 0;
+
+            GameState.StarField = new HashSet<GameObject>();
+            GameState.StarFieldBoundary = new Rectangle(-10, -500, GameState.GameResolution.Width + 20, GameState.GameResolution.Height + 1000);
+            GameState.StarImages = new Bitmap[]
+            {
+                Properties.Resources.star_blue,
+                Properties.Resources.star_orange,
+                Properties.Resources.star_redgiant,
+                Properties.Resources.star_white,
+                Properties.Resources.star_yellow
+            };
+
+            Random rnd = new Random();
+            for (int i = 0; i < 100; i++)
+            {
+                GameObject newStar = new GameObject();
+                float speed = ((float)rnd.Next() / (float)int.MaxValue) * 1.5f + 1.5f;
+                int x = rnd.Next(GameState.StarFieldBoundary.Left, GameState.StarFieldBoundary.Right);
+                int y = rnd.Next(GameState.StarFieldBoundary.Top, GameState.StarFieldBoundary.Bottom);
+                int idx = rnd.Next(0, GameState.StarImages.Length);
+                newStar.Sprite = new GameSprite(GameState.StarImages[idx], x, y);
+                newStar.Kinematic = new KinematicObject();
+                newStar.Kinematic.dX = 0;
+                newStar.Kinematic.dY = speed;
+                GameState.StarField.Add(newStar);
+            }
+
+            GameState.RotationAngle = 0f;
+            GameState.RotationImage = Properties.Resources.Toast;
+
+        }
+
+        public void SetupLevel(int level)
+        {
+            GameState.BulletFireCooldown = 0;
+            GameState.PlayerShootingEnabled = true;
+            GameState.Enemies.Clear();
+            GameState.PlayerLevelBulletsShot = 0;
+            GameState.PlayerLevelBulletsHit = 0;
+            GameState.LevelTimer = 0;
+            GameState.EnemySpawnQueue = new HashSet<GameObject>();
+
+
         }
 
         public void Update(double gameTime)
         {
+            GameState.RotationAngle += (float)gameTime * 100f;
+            GameState.LevelTimer += gameTime;
+            Random rnd = new Random();
+            // animate star field
+            foreach (var star in GameState.StarField)
+            {
+                star.Sprite.Y += star.Kinematic.dY;
+                if (star.Sprite.Y > GameState.StarFieldBoundary.Bottom)
+                {
+                    star.Sprite.Y = GameState.StarFieldBoundary.Top;
+                    star.Sprite.X = rnd.Next(GameState.StarFieldBoundary.Left, GameState.StarFieldBoundary.Right);
+                    star.Kinematic.dY = ((float)rnd.Next() / (float)int.MaxValue) * 1.5f + 1.5f;
+                    int idx = rnd.Next(0, GameState.StarImages.Length);
+                    star.Sprite.SpriteImage = GameState.StarImages[idx];
+                }
+            }
+
             // update position of all player bullets
             foreach (var pbullet in GameState.PlayerBullets)
             {
-                pbullet.Sprite.X += pbullet.Kimematic.dX;
-                pbullet.Sprite.Y += pbullet.Kimematic.dY;
+                pbullet.Sprite.X += pbullet.Kinematic.dX;
+                pbullet.Sprite.Y += pbullet.Kinematic.dY;
                 pbullet.Lifetime -= gameTime;
             }
 
@@ -83,91 +153,91 @@ namespace Space_Blasters.Models
             float force = (float)(GameState.PlayerAcceleration * gameTime);
 
             //mouse movement input
-            GameState.PlayerObject.Kimematic.dX += MouseState.dX * force * 0.3f;
-            GameState.PlayerObject.Kimematic.dY += MouseState.dY * force * 0.3f;
+            GameState.PlayerObject.Kinematic.dX += MouseState.dX * force * 0.3f;
+            GameState.PlayerObject.Kinematic.dY += MouseState.dY * force * 0.3f;
             // cap player movement. This is a quick hack because it's 1 AM.
             // I'll change this to calculate the angle the player is moving at, and 
             // properly limit them to the actual speed.
-            if (GameState.PlayerObject.Kimematic.dX > GameState.PlayerMaxSpeed)
+            if (GameState.PlayerObject.Kinematic.dX > GameState.PlayerMaxSpeed)
             {
-                GameState.PlayerObject.Kimematic.dX = GameState.PlayerMaxSpeed;
+                GameState.PlayerObject.Kinematic.dX = GameState.PlayerMaxSpeed;
             }
-            if (GameState.PlayerObject.Kimematic.dY > GameState.PlayerMaxSpeed)
+            if (GameState.PlayerObject.Kinematic.dY > GameState.PlayerMaxSpeed)
             {
-                GameState.PlayerObject.Kimematic.dY = GameState.PlayerMaxSpeed;
+                GameState.PlayerObject.Kinematic.dY = GameState.PlayerMaxSpeed;
             }
-            if (GameState.PlayerObject.Kimematic.dX < -1 * GameState.PlayerMaxSpeed)
+            if (GameState.PlayerObject.Kinematic.dX < -1 * GameState.PlayerMaxSpeed)
             {
-                GameState.PlayerObject.Kimematic.dX = -1 * GameState.PlayerMaxSpeed;
+                GameState.PlayerObject.Kinematic.dX = -1 * GameState.PlayerMaxSpeed;
             }
-            if (GameState.PlayerObject.Kimematic.dY < -1 * GameState.PlayerMaxSpeed)
+            if (GameState.PlayerObject.Kinematic.dY < -1 * GameState.PlayerMaxSpeed)
             {
-                GameState.PlayerObject.Kimematic.dY = -1 * GameState.PlayerMaxSpeed;
+                GameState.PlayerObject.Kinematic.dY = -1 * GameState.PlayerMaxSpeed;
             }
 
             //keyboard movement input
             if ((Keyboard.GetKeyStates(Key.Right) & KeyStates.Down) > 0)
             {
-                GameState.PlayerObject.Kimematic.dX += force;
-                if (GameState.PlayerObject.Kimematic.dX > GameState.PlayerMaxSpeed)
+                GameState.PlayerObject.Kinematic.dX += force;
+                if (GameState.PlayerObject.Kinematic.dX > GameState.PlayerMaxSpeed)
                 {
-                    GameState.PlayerObject.Kimematic.dX = GameState.PlayerMaxSpeed;
+                    GameState.PlayerObject.Kinematic.dX = GameState.PlayerMaxSpeed;
                 }
             }
             if ((Keyboard.GetKeyStates(Key.Left) & KeyStates.Down) > 0)
             {
-                GameState.PlayerObject.Kimematic.dX -= force;
-                if (GameState.PlayerObject.Kimematic.dX < -1 * GameState.PlayerMaxSpeed)
+                GameState.PlayerObject.Kinematic.dX -= force;
+                if (GameState.PlayerObject.Kinematic.dX < -1 * GameState.PlayerMaxSpeed)
                 {
-                    GameState.PlayerObject.Kimematic.dX = -1 * GameState.PlayerMaxSpeed;
+                    GameState.PlayerObject.Kinematic.dX = -1 * GameState.PlayerMaxSpeed;
                 }
             }
             if ((Keyboard.GetKeyStates(Key.Up) & KeyStates.Down) > 0)
             {
-                GameState.PlayerObject.Kimematic.dY -= force;
-                if (GameState.PlayerObject.Kimematic.dY < -1 * GameState.PlayerMaxSpeed)
+                GameState.PlayerObject.Kinematic.dY -= force;
+                if (GameState.PlayerObject.Kinematic.dY < -1 * GameState.PlayerMaxSpeed)
                 {
-                    GameState.PlayerObject.Kimematic.dY = -1 * GameState.PlayerMaxSpeed;
+                    GameState.PlayerObject.Kinematic.dY = -1 * GameState.PlayerMaxSpeed;
                 }
             }
             if ((Keyboard.GetKeyStates(Key.Down) & KeyStates.Down) > 0)
             {
-                GameState.PlayerObject.Kimematic.dY += force;
-                if (GameState.PlayerObject.Kimematic.dY > GameState.PlayerMaxSpeed)
+                GameState.PlayerObject.Kinematic.dY += force;
+                if (GameState.PlayerObject.Kinematic.dY > GameState.PlayerMaxSpeed)
                 {
-                    GameState.PlayerObject.Kimematic.dY = GameState.PlayerMaxSpeed;
+                    GameState.PlayerObject.Kinematic.dY = GameState.PlayerMaxSpeed;
                 }
             }
 
-            GameState.PlayerObject.Sprite.X += GameState.PlayerObject.Kimematic.dX;
-            GameState.PlayerObject.Sprite.Y += GameState.PlayerObject.Kimematic.dY;
+            GameState.PlayerObject.Sprite.X += GameState.PlayerObject.Kinematic.dX;
+            GameState.PlayerObject.Sprite.Y += GameState.PlayerObject.Kinematic.dY;
 
             // Keep ship in screen bounds
             if (GameState.PlayerObject.Sprite.X + GameState.PlayerObject.Sprite.Width >
                 GameState.GameResolution.Width)
             {
                 GameState.PlayerObject.Sprite.X = GameState.GameResolution.Width - GameState.PlayerObject.Sprite.Width;
-                GameState.PlayerObject.Kimematic.dX = 0;
+                GameState.PlayerObject.Kinematic.dX = 0;
             }
             if (GameState.PlayerObject.Sprite.X < 0)
             {
                 GameState.PlayerObject.Sprite.X = 0;
-                GameState.PlayerObject.Kimematic.dX = 0;
+                GameState.PlayerObject.Kinematic.dX = 0;
             }
             if (GameState.PlayerObject.Sprite.Y + GameState.PlayerObject.Sprite.Height >
                 GameState.GameResolution.Height)
             {
                 GameState.PlayerObject.Sprite.Y = GameState.GameResolution.Height - GameState.PlayerObject.Sprite.Height;
-                GameState.PlayerObject.Kimematic.dY = 0;
+                GameState.PlayerObject.Kinematic.dY = 0;
             }
             if (GameState.PlayerObject.Sprite.Y < 0)
             {
                 GameState.PlayerObject.Sprite.Y = 0;
-                GameState.PlayerObject.Kimematic.dY = 0;
+                GameState.PlayerObject.Kinematic.dY = 0;
             }
 
             // calculate the direction the ship should face
-            double theta = Math.Atan2(GameState.PlayerObject.Kimematic.dY * -1, GameState.PlayerObject.Kimematic.dX) * (180 / Math.PI);
+            double theta = Math.Atan2(GameState.PlayerObject.Kinematic.dY * -1, GameState.PlayerObject.Kinematic.dX) * (180 / Math.PI);
             if (theta < 0)
             {
                 theta += 360;
@@ -179,40 +249,40 @@ namespace Space_Blasters.Models
             // Ship pinned on left side
             if (GameState.PlayerObject.Sprite.X < 10)
             {
-                if (GameState.PlayerObject.Kimematic.dY >= -1.5 &&
-                    GameState.PlayerObject.Kimematic.dY <= 1.5)
+                if (GameState.PlayerObject.Kinematic.dY >= -1.5 &&
+                    GameState.PlayerObject.Kinematic.dY <= 1.5)
                 {
                     ShipRotationIndex = 0;
                 }
-                else if (GameState.PlayerObject.Kimematic.dY < -5)
+                else if (GameState.PlayerObject.Kinematic.dY < -5)
                 {
                     ShipRotationIndex = 4;
                 }
-                else if (GameState.PlayerObject.Kimematic.dY > 5)
+                else if (GameState.PlayerObject.Kinematic.dY > 5)
                 {
                     ShipRotationIndex = 12;
                 }
-                else if (GameState.PlayerObject.Kimematic.dY < -4)
+                else if (GameState.PlayerObject.Kinematic.dY < -4)
                 {
                     ShipRotationIndex = 3;
                 }
-                else if (GameState.PlayerObject.Kimematic.dY > 4)
+                else if (GameState.PlayerObject.Kinematic.dY > 4)
                 {
                     ShipRotationIndex = 13;
                 }
-                else if (GameState.PlayerObject.Kimematic.dY < -3)
+                else if (GameState.PlayerObject.Kinematic.dY < -3)
                 {
                     ShipRotationIndex = 2;
                 }
-                else if (GameState.PlayerObject.Kimematic.dY > 3)
+                else if (GameState.PlayerObject.Kinematic.dY > 3)
                 {
                     ShipRotationIndex = 14;
                 }
-                else if (GameState.PlayerObject.Kimematic.dY < -1.5)
+                else if (GameState.PlayerObject.Kinematic.dY < -1.5)
                 {
                     ShipRotationIndex = 1;
                 }
-                else if (GameState.PlayerObject.Kimematic.dY > 1.5)
+                else if (GameState.PlayerObject.Kinematic.dY > 1.5)
                 {
                     ShipRotationIndex = 15;
                 }
@@ -221,40 +291,40 @@ namespace Space_Blasters.Models
             // Ship pinned to the right
             if (GameState.GameResolution.Width - GameState.PlayerObject.Sprite.X - GameState.PlayerObject.Sprite.Width < 10)
             {
-                if (GameState.PlayerObject.Kimematic.dY >= -1.5 &&
-                    GameState.PlayerObject.Kimematic.dY <= 1.5)
+                if (GameState.PlayerObject.Kinematic.dY >= -1.5 &&
+                    GameState.PlayerObject.Kinematic.dY <= 1.5)
                 {
                     ShipRotationIndex = 8;
                 }
-                else if (GameState.PlayerObject.Kimematic.dY < -5)
+                else if (GameState.PlayerObject.Kinematic.dY < -5)
                 {
                     ShipRotationIndex = 4;
                 }
-                else if (GameState.PlayerObject.Kimematic.dY > 5)
+                else if (GameState.PlayerObject.Kinematic.dY > 5)
                 {
                     ShipRotationIndex = 12;
                 }
-                else if (GameState.PlayerObject.Kimematic.dY < -4)
+                else if (GameState.PlayerObject.Kinematic.dY < -4)
                 {
                     ShipRotationIndex = 5;
                 }
-                else if (GameState.PlayerObject.Kimematic.dY > 4)
+                else if (GameState.PlayerObject.Kinematic.dY > 4)
                 {
                     ShipRotationIndex = 11;
                 }
-                else if (GameState.PlayerObject.Kimematic.dY < -3)
+                else if (GameState.PlayerObject.Kinematic.dY < -3)
                 {
                     ShipRotationIndex = 6;
                 }
-                else if (GameState.PlayerObject.Kimematic.dY > 3)
+                else if (GameState.PlayerObject.Kinematic.dY > 3)
                 {
                     ShipRotationIndex = 10;
                 }
-                else if (GameState.PlayerObject.Kimematic.dY < -1.5)
+                else if (GameState.PlayerObject.Kinematic.dY < -1.5)
                 {
                     ShipRotationIndex = 7;
                 }
-                else if (GameState.PlayerObject.Kimematic.dY > 1.5)
+                else if (GameState.PlayerObject.Kinematic.dY > 1.5)
                 {
                     ShipRotationIndex = 9;
                 }
@@ -263,40 +333,40 @@ namespace Space_Blasters.Models
             // Ship pinned to the top
             if (GameState.PlayerObject.Sprite.Y < 10)
             {
-                if (GameState.PlayerObject.Kimematic.dX >= -1.5 &&
-                    GameState.PlayerObject.Kimematic.dX <= 1.5)
+                if (GameState.PlayerObject.Kinematic.dX >= -1.5 &&
+                    GameState.PlayerObject.Kinematic.dX <= 1.5)
                 {
                     ShipRotationIndex = 12;
                 }
-                else if (GameState.PlayerObject.Kimematic.dX < -5)
+                else if (GameState.PlayerObject.Kinematic.dX < -5)
                 {
                     ShipRotationIndex = 8;
                 }
-                else if (GameState.PlayerObject.Kimematic.dX > 5)
+                else if (GameState.PlayerObject.Kinematic.dX > 5)
                 {
                     ShipRotationIndex = 0;
                 }
-                else if (GameState.PlayerObject.Kimematic.dX < -4)
+                else if (GameState.PlayerObject.Kinematic.dX < -4)
                 {
                     ShipRotationIndex = 9;
                 }
-                else if (GameState.PlayerObject.Kimematic.dX > 4)
+                else if (GameState.PlayerObject.Kinematic.dX > 4)
                 {
                     ShipRotationIndex = 15;
                 }
-                else if (GameState.PlayerObject.Kimematic.dX < -3)
+                else if (GameState.PlayerObject.Kinematic.dX < -3)
                 {
                     ShipRotationIndex = 10;
                 }
-                else if (GameState.PlayerObject.Kimematic.dX > 3)
+                else if (GameState.PlayerObject.Kinematic.dX > 3)
                 {
                     ShipRotationIndex = 14;
                 }
-                else if (GameState.PlayerObject.Kimematic.dX < -1.5)
+                else if (GameState.PlayerObject.Kinematic.dX < -1.5)
                 {
                     ShipRotationIndex = 11;
                 }
-                else if (GameState.PlayerObject.Kimematic.dX > 1.5)
+                else if (GameState.PlayerObject.Kinematic.dX > 1.5)
                 {
                     ShipRotationIndex = 13;
                 }
@@ -305,40 +375,40 @@ namespace Space_Blasters.Models
             // Ship pinned to the bottom
             if (GameState.GameResolution.Height - GameState.PlayerObject.Sprite.Y - GameState.PlayerObject.Sprite.Height < 10)
             {
-                if (GameState.PlayerObject.Kimematic.dX >= -1.5 &&
-                    GameState.PlayerObject.Kimematic.dX <= 1.5)
+                if (GameState.PlayerObject.Kinematic.dX >= -1.5 &&
+                    GameState.PlayerObject.Kinematic.dX <= 1.5)
                 {
                     ShipRotationIndex = 4;
                 }
-                else if (GameState.PlayerObject.Kimematic.dX < -5)
+                else if (GameState.PlayerObject.Kinematic.dX < -5)
                 {
                     ShipRotationIndex = 8;
                 }
-                else if (GameState.PlayerObject.Kimematic.dX > 5)
+                else if (GameState.PlayerObject.Kinematic.dX > 5)
                 {
                     ShipRotationIndex = 0;
                 }
-                else if (GameState.PlayerObject.Kimematic.dX < -4)
+                else if (GameState.PlayerObject.Kinematic.dX < -4)
                 {
                     ShipRotationIndex = 7;
                 }
-                else if (GameState.PlayerObject.Kimematic.dX > 4)
+                else if (GameState.PlayerObject.Kinematic.dX > 4)
                 {
                     ShipRotationIndex = 1;
                 }
-                else if (GameState.PlayerObject.Kimematic.dX < -3)
+                else if (GameState.PlayerObject.Kinematic.dX < -3)
                 {
                     ShipRotationIndex = 6;
                 }
-                else if (GameState.PlayerObject.Kimematic.dX > 3)
+                else if (GameState.PlayerObject.Kinematic.dX > 3)
                 {
                     ShipRotationIndex = 2;
                 }
-                else if (GameState.PlayerObject.Kimematic.dX < -1.5)
+                else if (GameState.PlayerObject.Kinematic.dX < -1.5)
                 {
                     ShipRotationIndex = 5;
                 }
-                else if (GameState.PlayerObject.Kimematic.dX > 1.5)
+                else if (GameState.PlayerObject.Kinematic.dX > 1.5)
                 {
                     ShipRotationIndex = 3;
                 }
@@ -369,19 +439,20 @@ namespace Space_Blasters.Models
                     // test values
                     bullet.Sprite.X = GameState.PlayerObject.Sprite.X + bulletSprite.X;
                     bullet.Sprite.Y = GameState.PlayerObject.Sprite.Y + bulletSprite.Y;
-                    bullet.Kimematic = new KinematicObject();
+                    bullet.Kinematic = new KinematicObject();
                     double bulletTheta = (360 - ShipIndexToTheta(ShipRotationIndex)) * (Math.PI / 180);
                     if (bulletTheta > 180)
                     {
                         bulletTheta -= 360;
                     }
-                    bullet.Kimematic.dX = (float)(GameState.BulletSpeed * Math.Cos(bulletTheta)) + GameState.PlayerObject.Kimematic.dX;
-                    bullet.Kimematic.dY = (float)(GameState.BulletSpeed * Math.Sin(bulletTheta)) + GameState.PlayerObject.Kimematic.dY;
+                    bullet.Kinematic.dX = (float)(GameState.BulletSpeed * Math.Cos(bulletTheta)) + GameState.PlayerObject.Kinematic.dX;
+                    bullet.Kinematic.dY = (float)(GameState.BulletSpeed * Math.Sin(bulletTheta)) + GameState.PlayerObject.Kinematic.dY;
                     bullet.Lifetime = 4.0;
                     GameState.PlayerBullets.Add(bullet);
                 }
             }
         }
+
 
         public static int ThetaToShipIndex(double theta)
         {

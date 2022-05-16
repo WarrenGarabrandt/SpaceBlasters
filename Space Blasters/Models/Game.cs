@@ -158,6 +158,12 @@ namespace Space_Blasters.Models
             else
             {
                 g.FillRectangle(new SolidBrush(Color.Black), new Rectangle(0, 0, GameState.GameResolution.Width, GameState.GameResolution.Height));
+                
+                // animate star field
+                foreach (var star in GameState.StarField)
+                {
+                    star.Sprite.Draw(g);
+                }
 
                 // draw the player
                 GameState.PlayerObject.Sprite.Draw(g);
@@ -168,12 +174,24 @@ namespace Space_Blasters.Models
                     bullet.Sprite.Draw(g);
                 }
 
+                // draw the test toast a bunch of times, rotating it
+                //for (int tX = 0; tX < 15; tX++)
+                //{
+                //    for (int tY = 0; tY < 8; tY++)
+                //    {
+                //        using (Bitmap temp = RotateImage(GameState.RotationImage, GameState.RotationAngle))
+                //        {
+                //            g.DrawImage(temp, 128 * tX, 128 * tY);
+                //        }
+                //    }
+                //}
+
+
             }
 
             g.DrawString(DisplayText, fontFPS, Brushes.White, new PointF(5, 5));
 
         }
-
 
     }
 }
